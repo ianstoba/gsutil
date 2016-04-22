@@ -2078,8 +2078,6 @@ def _DoSlicedDownload(src_url, src_obj_metadata_o, dst_url, download_file_name,
   src_obj_metadata = copy.deepcopy(src_obj_metadata_o)
   src_obj_metadata.customerEncryption = None
   src_obj_metadata.metadata = None
-  print 'my metdata' + str(src_obj_metadata.metadata)
-  print 'orig metadta' + str(src_obj_metadata_o.metadata)
 
   components_to_download, component_lengths = _PartitionObject(
       src_url, src_obj_metadata, dst_url, download_file_name, decryption_key)
