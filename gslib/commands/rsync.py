@@ -966,6 +966,7 @@ class RsyncCommand(Command):
       min_args=2,
       max_args=2,
       supported_sub_args='cCdenprRUx:',
+      supported_private_args=['preserveFileAttributes'],
       file_url_ok=True,
       provider_url_ok=False,
       urls_start_arg=0,
@@ -1060,6 +1061,7 @@ class RsyncCommand(Command):
     self.dryrun = False
     self.exclude_pattern = None
     self.skip_unsupported_objects = False
+    preserve_file_attributes = None
     # self.recursion_requested is initialized in command.py (so it can be
     # checked in parent class for all commands).
 
@@ -1091,6 +1093,9 @@ class RsyncCommand(Command):
             self.exclude_pattern = re.compile(a)
           except re.error:
             raise CommandException('Invalid exclude filter (%s)' % a)
+        elif o == '--preserveFileAttributes':
+          preserve_file_attributes = True
     return CreateCopyHelperOpts(
         preserve_acl=preserve_acl,
-        skip_unsupported_objects=self.skip_unsupported_objects)
+        skip_unsupported_objects=self.skip_unsupported_objects,
+        preserve_file_attributes=preserve_file_attributes)

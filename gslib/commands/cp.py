@@ -754,7 +754,7 @@ class CpCommand(Command):
       urls_start_arg=0,
       gs_api_support=[ApiSelector.XML, ApiSelector.JSON],
       gs_default_api=ApiSelector.JSON,
-      supported_private_args=['testcallbackfile='],
+      supported_private_args=['testcallbackfile=', 'preserveFileAttributes'],
       argparse_arguments=[
           CommandArgument.MakeZeroOrMoreCloudOrFileURLsArgument()
       ]
@@ -1027,6 +1027,7 @@ class CpCommand(Command):
     gzip_arg_all = None
 
     test_callback_file = None
+    preserve_file_attributes = None
 
     # self.recursion_requested initialized in command.py (so can be checked
     # in parent class for all commands).
@@ -1073,6 +1074,8 @@ class CpCommand(Command):
           gzip_arg_exts = [x.strip() for x in a.split(',')]
         elif o == '-Z':
           gzip_arg_all = GZIP_ALL_FILES
+        elif o == '--preserveFileAttributes':
+          preserve_file_attributes = True
     if preserve_acl and canned_acl:
       raise CommandException(
           'Specifying both the -p and -a options together is invalid.')
@@ -1096,4 +1099,5 @@ class CpCommand(Command):
         preserve_acl=preserve_acl,
         canned_acl=canned_acl,
         skip_unsupported_objects=self.skip_unsupported_objects,
-        test_callback_file=test_callback_file)
+        test_callback_file=test_callback_file,
+        preserve_file_attributes=preserve_file_attributes)

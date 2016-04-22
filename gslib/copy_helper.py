@@ -19,6 +19,7 @@ from __future__ import absolute_import
 
 import base64
 from collections import namedtuple
+import copy
 import csv
 import datetime
 import errno
@@ -311,7 +312,8 @@ CopyHelperOpts = namedtuple('CopyHelperOpts', [
     'preserve_acl',
     'canned_acl',
     'skip_unsupported_objects',
-    'test_callback_file'])
+    'test_callback_file',
+    'preserve_file_attributes'])
 
 
 # pylint: disable=global-variable-undefined
@@ -319,7 +321,8 @@ def CreateCopyHelperOpts(perform_mv=False, no_clobber=False, daisy_chain=False,
                          read_args_from_stdin=False, print_ver=False,
                          use_manifest=False, preserve_acl=False,
                          canned_acl=None, skip_unsupported_objects=False,
-                         test_callback_file=None):
+                         test_callback_file=None,
+                         preserve_file_attributes=False):
   """Creates CopyHelperOpts for passing options to CopyHelper."""
   # We create a tuple with union of options needed by CopyHelper and any
   # copy-related functionality in CpCommand, RsyncCommand, or Command class.
@@ -334,7 +337,8 @@ def CreateCopyHelperOpts(perform_mv=False, no_clobber=False, daisy_chain=False,
       preserve_acl=preserve_acl,
       canned_acl=canned_acl,
       skip_unsupported_objects=skip_unsupported_objects,
-      test_callback_file=test_callback_file)
+      test_callback_file=test_callback_file,
+      preserve_file_attributes=preserve_file_attributes)
   return global_copy_helper_opts
 
 
@@ -1631,6 +1635,9 @@ def _UploadFileToObject(src_url, src_obj_filestream, src_obj_size,
       logger, allow_splitting, upload_url, dst_url, src_obj_size,
       canned_acl=global_copy_helper_opts.canned_acl)
 
+  if global_copy_helper_opts.preserve_file_attributes and not src_url.IsStream():
+    SerializeFileAttributesToObjectMetadata(src_url.object_name, dst_obj_metadata)
+
   if (src_url.IsStream() and
       gsutil_api.GetApiSelector(provider=dst_url.scheme) == ApiSelector.JSON):
     orig_stream = upload_stream
@@ -2040,7 +2047,7 @@ def _PartitionObject(src_url, src_obj_metadata, dst_url,
   return components_to_download, component_lengths
 
 
-def _DoSlicedDownload(src_url, src_obj_metadata, dst_url, download_file_name,
+def _DoSlicedDownload(src_url, src_obj_metadata_o, dst_url, download_file_name,
                       command_obj, logger, copy_exception_handler,
                       api_selector, decryption_key=None):
   """Downloads a cloud object to a local file using sliced download.
@@ -2068,7 +2075,11 @@ def _DoSlicedDownload(src_url, src_obj_metadata, dst_url, download_file_name,
   # CustomerEncryptionValue is a subclass and thus not pickleable for
   # multiprocessing, but at this point we already have the matching key,
   # so just discard the metadata.
+  src_obj_metadata = copy.deepcopy(src_obj_metadata_o)
   src_obj_metadata.customerEncryption = None
+  src_obj_metadata.metadata = None
+  print 'my metdata' + str(src_obj_metadata.metadata)
+  print 'orig metadta' + str(src_obj_metadata_o.metadata)
 
   components_to_download, component_lengths = _PartitionObject(
       src_url, src_obj_metadata, dst_url, download_file_name, decryption_key)
@@ -2558,6 +2569,9 @@ def _ValidateAndCompleteDownload(logger, src_url, src_obj_metadata, dst_url,
     os.rename(file_name,
               final_file_name)
 
+  if global_copy_helper_opts.preserve_file_attributes:
+    DeserializeFileAttributesFromObjectMetadata(final_file_name, src_obj_metadata)
+
   if 'md5' in local_hashes:
     return local_hashes['md5']
 
@@ -2696,6 +2710,33 @@ def _CopyObjToObjDaisyChainMode(src_url, src_obj_metadata, dst_url,
           uploaded_object.md5Hash)
 
 
+def DeserializeFileAttributesFromObjectMetadata(file_name, obj_metadata):
+  """Restore file metadata from object metadata custom header.
+  Currently only works with last modification and access time."""
+  if obj_metadata.metadata:
+    for additional_property in obj_metadata.metadata.additionalProperties:
+      if additional_property.key == 'gsutil_preserve_attrs':
+        file_attributes = json.loads(additional_property.value)
+        os.utime(file_name, (file_attributes['atime'], file_attributes['mtime']))
+        return
+
+
+def SerializeFileAttributesToObjectMetadata(file_name, obj_metadata):
+  """Store file metadata in an object metadata custom header."""
+  (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(file_name)
+  file_attributes = {'mode': mode,
+                     'uid': uid,
+                     'gid': gid,
+                     'atime': atime,
+                     'mtime': mtime,
+                     'ctime': ctime}
+  if not obj_metadata.metadata:
+    obj_metadata.metadata = apitools_messages.Object.MetadataValue()
+  obj_metadata.metadata.additionalProperties.append(
+    apitools_messages.Object.MetadataValue.AdditionalProperty(
+      key='gsutil_preserve_attrs', value=json.dumps(file_attributes)))
+
+
 # pylint: disable=undefined-variable
 # pylint: disable=too-many-statements
 def PerformCopy(logger, src_url, dst_url, gsutil_api, command_obj,
@@ -2779,6 +2820,9 @@ def PerformCopy(logger, src_url, dst_url, gsutil_api, command_obj,
     if (src_url.scheme == 's3' and
         global_copy_helper_opts.skip_unsupported_objects):
       src_obj_fields.append('storageClass')
+
+    if global_copy_helper_opts.preserve_file_attributes:
+      src_obj_fields.append('metadata')
 
     try:
       src_generation = GenerationFromUrlAndString(src_url, src_url.generation)
