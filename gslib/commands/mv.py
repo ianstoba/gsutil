@@ -111,7 +111,7 @@ class MvCommand(Command):
       max_args=NO_MAX,
       # Flags for mv are passed through to cp.
       supported_sub_args=CP_SUB_ARGS,
-      supported_private_args=['preserveFileAttributes='],
+      supported_private_args=['preservePOSIXAttributes='],
       file_url_ok=True,
       provider_url_ok=False,
       urls_start_arg=0,

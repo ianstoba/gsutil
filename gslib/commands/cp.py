@@ -20,6 +20,7 @@ from __future__ import absolute_import
 import os
 import time
 import traceback
+import platform
 
 from gslib import copy_helper
 from gslib.cat_helper import CatHelper
@@ -754,7 +755,7 @@ class CpCommand(Command):
       urls_start_arg=0,
       gs_api_support=[ApiSelector.XML, ApiSelector.JSON],
       gs_default_api=ApiSelector.JSON,
-      supported_private_args=['testcallbackfile=', 'preserveFileAttributes'],
+      supported_private_args=['testcallbackfile=', 'preservePOSIXAttributes'],
       argparse_arguments=[
           CommandArgument.MakeZeroOrMoreCloudOrFileURLsArgument()
       ]
@@ -1074,8 +1075,11 @@ class CpCommand(Command):
           gzip_arg_exts = [x.strip() for x in a.split(',')]
         elif o == '-Z':
           gzip_arg_all = GZIP_ALL_FILES
-        elif o == '--preserveFileAttributes':
+        elif (o == '--preservePOSIXAttributes') && (platform.system() != 'Windows'):
           preserve_file_attributes = True
+	elif (o == '--preservePOSIXAttributes') && (platform.ststem() == 'Windows'):
+	  raise CommandException(
+            'POSIX file attributes are not available on Windows systems.')
     if preserve_acl and canned_acl:
       raise CommandException(
           'Specifying both the -p and -a options together is invalid.')

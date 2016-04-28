@@ -26,6 +26,7 @@ import tempfile
 import textwrap
 import traceback
 import urllib
+import platform
 
 from boto import config
 import crcmod
@@ -966,7 +967,7 @@ class RsyncCommand(Command):
       min_args=2,
       max_args=2,
       supported_sub_args='cCdenprRUx:',
-      supported_private_args=['preserveFileAttributes'],
+      supported_private_args=['preservePOSIXAttributes'],
       file_url_ok=True,
       provider_url_ok=False,
       urls_start_arg=0,
@@ -1093,8 +1094,10 @@ class RsyncCommand(Command):
             self.exclude_pattern = re.compile(a)
           except re.error:
             raise CommandException('Invalid exclude filter (%s)' % a)
-        elif o == '--preserveFileAttributes':
+        elif (o == '--preservePOSIXAttributes') && (platform.system() != 'Windows'):
           preserve_file_attributes = True
+        elif (o == '--preservePOSIXAttribues') && (platform.system() == 'Windows'):
+          raise CommandException('POSIX file attributes are not supported on Windows systems.')
     return CreateCopyHelperOpts(
         preserve_acl=preserve_acl,
         skip_unsupported_objects=self.skip_unsupported_objects,

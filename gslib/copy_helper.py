@@ -2709,13 +2709,14 @@ def _CopyObjToObjDaisyChainMode(src_url, src_obj_metadata, dst_url,
 
 
 def DeserializeFileAttributesFromObjectMetadata(file_name, obj_metadata):
-  """Restore file metadata from object metadata custom header.
-  Currently only works with last modification and access time."""
+  """Restore file metadata from object metadata custom header."""
   if obj_metadata.metadata:
     for additional_property in obj_metadata.metadata.additionalProperties:
       if additional_property.key == 'gsutil_preserve_attrs':
         file_attributes = json.loads(additional_property.value)
         os.utime(file_name, (file_attributes['atime'], file_attributes['mtime']))
+	os.fchmod(file_name, file_attributes['mod'])
+	os.chown(file_name, file_attributes['uid'], file_attributes['gid'])
         return
 
 
