@@ -1094,9 +1094,9 @@ class RsyncCommand(Command):
             self.exclude_pattern = re.compile(a)
           except re.error:
             raise CommandException('Invalid exclude filter (%s)' % a)
-        elif (o == '--preservePOSIXAttributes') && (platform.system() != 'Windows'):
+        elif (o == '--preservePOSIXAttributes') and (platform.system() != 'Windows'):
           preserve_file_attributes = True
-        elif (o == '--preservePOSIXAttribues') && (platform.system() == 'Windows'):
+        elif (o == '--preservePOSIXAttribues') and (platform.system() == 'Windows'):
           raise CommandException('POSIX file attributes are not supported on Windows systems.')
     return CreateCopyHelperOpts(
         preserve_acl=preserve_acl,

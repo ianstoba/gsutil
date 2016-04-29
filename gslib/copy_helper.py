@@ -2715,7 +2715,7 @@ def DeserializeFileAttributesFromObjectMetadata(file_name, obj_metadata):
       if additional_property.key == 'gsutil_preserve_attrs':
         file_attributes = json.loads(additional_property.value)
         os.utime(file_name, (file_attributes['atime'], file_attributes['mtime']))
-	os.fchmod(file_name, file_attributes['mod'])
+	os.chmod(file_name, file_attributes['mod'])
 	os.chown(file_name, file_attributes['uid'], file_attributes['gid'])
         return
 

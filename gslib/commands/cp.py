@@ -1075,11 +1075,11 @@ class CpCommand(Command):
           gzip_arg_exts = [x.strip() for x in a.split(',')]
         elif o == '-Z':
           gzip_arg_all = GZIP_ALL_FILES
-        elif (o == '--preservePOSIXAttributes') && (platform.system() != 'Windows'):
+        elif (o == '--preservePOSIXAttributes') and (platform.system() != 'Windows'):
           preserve_file_attributes = True
-	elif (o == '--preservePOSIXAttributes') && (platform.ststem() == 'Windows'):
-	  raise CommandException(
-            'POSIX file attributes are not available on Windows systems.')
+        elif (o == '--preservePOSIXAttributes') and (platform.ststem() == 'Windows'):
+          raise CommandException(
+              'POSIX file attributes are not available on Windows systems.')
     if preserve_acl and canned_acl:
       raise CommandException(
           'Specifying both the -p and -a options together is invalid.')
