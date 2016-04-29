@@ -1077,7 +1077,7 @@ class CpCommand(Command):
           gzip_arg_all = GZIP_ALL_FILES
         elif (o == '--preservePOSIXAttributes') and (platform.system() != 'Windows'):
           preserve_file_attributes = True
-        elif (o == '--preservePOSIXAttributes') and (platform.ststem() == 'Windows'):
+        elif (o == '--preservePOSIXAttributes') and (platform.system() == 'Windows'):
           raise CommandException(
               'POSIX file attributes are not available on Windows systems.')
     if preserve_acl and canned_acl:
